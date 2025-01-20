@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Sankey Diagram</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+</head>
+<body>
+    <div id="sankey_chart"></div>
+
+<script>
+const data = {"nodes": [{"id": "Total Time", "value": 238592, "label": "66 hr 16 min"}, {"id": "P1 Progression", "value": 6696, "label": "1 hr 51 min - 2.8%"}, {"id": "P2 Progression", "value": 44016, "label": "12 hr 13 min - 18.4%"}, {"id": "P3 Progression", "value": 55618, "label": "15 hr 26 min - 23.3%"}, {"id": "P4 Progression", "value": 70226, "label": "19 hr 30 min - 29.4%"}, {"id": "P5 Progression", "value": 62036, "label": "17 hr 13 min - 26.0%"}, {"id": "P1 Total", "value": 32726, "label": "9 hr 05 min - 13.7%"}, {"id": "P2 Total", "value": 64194, "label": "17 hr 49 min - 26.9%"}, {"id": "P3 Total", "value": 62567, "label": "17 hr 22 min - 26.2%"}, {"id": "P4 Total", "value": 59051, "label": "16 hr 24 min - 24.7%"}, {"id": "P5 Total", "value": 20054, "label": "5 hr 34 min - 8.4%"}], "links": [{"source": "Total Time", "target": "P1 Progression", "value": 6696}, {"source": "Total Time", "target": "P2 Progression", "value": 44016}, {"source": "Total Time", "target": "P3 Progression", "value": 55618}, {"source": "Total Time", "target": "P4 Progression", "value": 70226}, {"source": "Total Time", "target": "P5 Progression", "value": 62036}, {"source": "P1 Progression", "target": "P1 Total", "value": 6696}, {"source": "P2 Progression", "target": "P1 Total", "value": 18606}, {"source": "P2 Progression", "target": "P2 Total", "value": 25410}, {"source": "P3 Progression", "target": "P1 Total", "value": 3830}, {"source": "P3 Progression", "target": "P2 Total", "value": 20458}, {"source": "P3 Progression", "target": "P3 Total", "value": 31330}, {"source": "P4 Progression", "target": "P1 Total", "value": 2297}, {"source": "P4 Progression", "target": "P2 Total", "value": 9807}, {"source": "P4 Progression", "target": "P3 Total", "value": 23952}, {"source": "P4 Progression", "target": "P4 Total", "value": 34170}, {"source": "P5 Progression", "target": "P1 Total", "value": 1297}, {"source": "P5 Progression", "target": "P2 Total", "value": 8519}, {"source": "P5 Progression", "target": "P3 Total", "value": 7285}, {"source": "P5 Progression", "target": "P4 Total", "value": 24881}, {"source": "P5 Progression", "target": "P5 Total", "value": 20054}], "metricType": "Time"};
+const metricType = data.metricType;
+
+    const color_map = {
+        [`Total ${metricType}`]: "#D3D3D3",  // Dynamically set Total Time or Total Pulls
+        "P1": "#A0522D",
+        "P2": "#B0E0E6",
+        "P3": "#9370DB",
+        "P4": "#4682B4",
+        "P5": "#FFD700",
+    };
+
+    const width = 1200;
+    const height = 700;
+    const margin = { top: 20, right: 200, bottom: 20, left: 200 };  // Add margins for labels
+
+    const svg = d3.select("#sankey_chart")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)  // Account for margins
+        .attr("height", height + margin.top + margin.bottom)  // Account for margins
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const sankey = d3.sankey()
+        .nodeWidth(15)
+        .nodePadding(10)
+        .extent([[1, 1], [width - 1, height - 1]]);
+
+    // Ensure that nodes have indices assigned
+    const sankeyNodes = data.nodes.map((node, index) => ({ ...node, index }));
+
+    // Ensure links map source and target to node indices
+    const sankeyLinks = data.links.map(link => ({
+        source: sankeyNodes.findIndex(node => node.id === link.source),
+        target: sankeyNodes.findIndex(node => node.id === link.target),
+        value: link.value
+    }));
+
+    const sankeyData = sankey({
+        nodes: sankeyNodes,
+        links: sankeyLinks
+    });
+
+    console.log("Nodes:", sankeyData.nodes);
+    console.log("Links:", sankeyData.links);
+
+    // Helper function to get color based on node id
+    const getNodeColor = id => {
+        if (id === `Total ${metricType}`) return color_map[`Total ${metricType}`]; 
+        const phase = id.split(" ")[0]; // Extract "P1", "P2", etc., from id
+        return color_map[phase] || "#808080"; // Default color (gray) if not found
+    };
+
+    // Function to lighten a color by applying an opacity effect
+    const lightenColor = (hex, opacity) => {
+        const [r, g, b] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
+        return `rgba(${r},${g},${b},${opacity})`;
+    };
+
+    // Render nodes
+    svg.append("g")
+        .selectAll("rect")
+        .data(sankeyData.nodes)
+        .join("rect")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("fill", d => getNodeColor(d.id)) // Apply color map
+
+    // Create a div for the tooltip and hide it initially
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("background", "#fff")
+        .style("border", "1px solid #ccc")
+        .style("padding", "8px")
+        .style("border-radius", "4px")
+        .style("box-shadow", "0 0 10px rgba(0,0,0,0.2)")
+        .style("pointer-events", "none")
+        .style("display", "none");
+
+    // Render links and attach click event for tooltips
+    svg.append("g")
+        .selectAll("path")
+        .data(sankeyData.links)
+        .join("path")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("fill", "none")
+        .attr("stroke", d => lightenColor(getNodeColor(d.target.id), 0.5)) // Lighter/transparent color
+        .attr("stroke-width", d => Math.max(1, d.width))
+        .on("click", (event, d) => {
+            let tooltipText;
+            if (metricType === "Time") {
+                const hours = Math.floor(d.value / 3600);
+                const minutes = Math.floor((d.value % 3600) / 60);
+                tooltipText = `${d.source.id} → ${d.target.id}: ${hours} hr ${minutes} min`;
+            } else if (metricType === "Pulls") {
+                tooltipText = `${d.source.id} → ${d.target.id}: ${d.value} pulls`;
+            }
+
+            tooltip.html(tooltipText)
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY + 10}px`)
+                .style("display", "block");
+        });
+
+    // Hide tooltip when clicking elsewhere on the page
+    d3.select("body").on("click", function(event) {
+        if (!event.target.closest("path")) {
+            tooltip.style("display", "none");
+        }
+    });
+
+    // Add labels to nodes
+    svg.append("g")
+        .selectAll("text")
+        .data(sankeyData.nodes)
+        .join("text")
+        .attr("x", d => {
+            if (d.id.endsWith("Total")) {
+                return d.x1 + 6; // Position to the right of the node
+            }
+            return d.x0 - 6; // Position to the left of the node for others
+        })
+        .attr("y", d => (d.y0 + d.y1) / 2) // Center label vertically
+        .attr("dy", "0.35em") // Adjust text alignment
+        .attr("text-anchor", d => (d.id.endsWith("Total") ? "start" : "end")) // Align text appropriately
+        .attr("fill", "black") // Label color
+        .text(d => `${d.id} (${d.label})`); // Add label with time
+</script>
+</body>
+</html>
+    
