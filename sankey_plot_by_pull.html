@@ -12,21 +12,16 @@
     <div id="sankey_chart"></div>
 
 <script>
-const data = {"nodes": [{"id": "Total Pulls", "value": 741, "label": "741 pulls"}, {"id": "P1 Progression", "value": 71, "label": "71 pulls - 9.6%"}, {"id": "P2 Progression", "value": 258, "label": "258 pulls - 34.8%"}, {"id": "P3 Progression", "value": 159, "label": "159 pulls - 21.5%"}, {"id": "P4 Progression", "value": 147, "label": "147 pulls - 19.8%"}, {"id": "P5 Progression", "value": 106, "label": "106 pulls - 14.3%"}, {"id": "P1 Total", "value": 305, "label": "305 pulls - 41.2%"}, {"id": "P2 Total", "value": 222, "label": "222 pulls - 30.0%"}, {"id": "P3 Total", "value": 114, "label": "114 pulls - 15.4%"}, {"id": "P4 Total", "value": 80, "label": "80 pulls - 10.8%"}, {"id": "P5 Total", "value": 20, "label": "20 pulls - 2.7%"}], "links": [{"source": "Total Pulls", "target": "P1 Progression", "value": 71}, {"source": "Total Pulls", "target": "P2 Progression", "value": 258}, {"source": "Total Pulls", "target": "P3 Progression", "value": 159}, {"source": "Total Pulls", "target": "P4 Progression", "value": 147}, {"source": "Total Pulls", "target": "P5 Progression", "value": 106}, {"source": "P1 Progression", "target": "P1 Total", "value": 71}, {"source": "P2 Progression", "target": "P1 Total", "value": 160}, {"source": "P2 Progression", "target": "P2 Total", "value": 98}, {"source": "P3 Progression", "target": "P1 Total", "value": 36}, {"source": "P3 Progression", "target": "P2 Total", "value": 64}, {"source": "P3 Progression", "target": "P3 Total", "value": 59}, {"source": "P4 Progression", "target": "P1 Total", "value": 25}, {"source": "P4 Progression", "target": "P2 Total", "value": 33}, {"source": "P4 Progression", "target": "P3 Total", "value": 42}, {"source": "P4 Progression", "target": "P4 Total", "value": 47}, {"source": "P5 Progression", "target": "P1 Total", "value": 13}, {"source": "P5 Progression", "target": "P2 Total", "value": 27}, {"source": "P5 Progression", "target": "P3 Total", "value": 13}, {"source": "P5 Progression", "target": "P4 Total", "value": 33}, {"source": "P5 Progression", "target": "P5 Total", "value": 20}], "metricType": "Pulls"};
-const metricType = data.metricType;
+    const data = {"nodes": [{"id": "Total Pulls", "value": 741, "label": "741 pulls"}, {"id": "P1 Progression", "value": 71, "label": "71 pulls - 9.6%"}, {"id": "P2 Progression", "value": 258, "label": "258 pulls - 34.8%"}, {"id": "P3 Progression", "value": 159, "label": "159 pulls - 21.5%"}, {"id": "P4 Progression", "value": 147, "label": "147 pulls - 19.8%"}, {"id": "P5 Progression", "value": 106, "label": "106 pulls - 14.3%"}, {"id": "P1 Total", "value": 305, "label": "305 pulls - 41.2%"}, {"id": "P2 Total", "value": 222, "label": "222 pulls - 30.0%"}, {"id": "P3 Total", "value": 114, "label": "114 pulls - 15.4%"}, {"id": "P4 Total", "value": 80, "label": "80 pulls - 10.8%"}, {"id": "P5 Total", "value": 20, "label": "20 pulls - 2.7%"}], "links": [{"source": "Total Pulls", "target": "P1 Progression", "value": 71}, {"source": "Total Pulls", "target": "P2 Progression", "value": 258}, {"source": "Total Pulls", "target": "P3 Progression", "value": 159}, {"source": "Total Pulls", "target": "P4 Progression", "value": 147}, {"source": "Total Pulls", "target": "P5 Progression", "value": 106}, {"source": "P1 Progression", "target": "P1 Total", "value": 71}, {"source": "P2 Progression", "target": "P1 Total", "value": 160}, {"source": "P2 Progression", "target": "P2 Total", "value": 98}, {"source": "P3 Progression", "target": "P1 Total", "value": 36}, {"source": "P3 Progression", "target": "P2 Total", "value": 64}, {"source": "P3 Progression", "target": "P3 Total", "value": 59}, {"source": "P4 Progression", "target": "P1 Total", "value": 25}, {"source": "P4 Progression", "target": "P2 Total", "value": 33}, {"source": "P4 Progression", "target": "P3 Total", "value": 42}, {"source": "P4 Progression", "target": "P4 Total", "value": 47}, {"source": "P5 Progression", "target": "P1 Total", "value": 13}, {"source": "P5 Progression", "target": "P2 Total", "value": 27}, {"source": "P5 Progression", "target": "P3 Total", "value": 13}, {"source": "P5 Progression", "target": "P4 Total", "value": 33}, {"source": "P5 Progression", "target": "P5 Total", "value": 20}], "metricType": "Pulls"};
+    const metricType = data.metricType;
 
-    const color_map = {
-        [`Total ${metricType}`]: "#D3D3D3",  // Dynamically set Total Time or Total Pulls
-        "P1": "#A0522D",
-        "P2": "#B0E0E6",
-        "P3": "#9370DB",
-        "P4": "#4682B4",
-        "P5": "#FFD700",
-    };
+    const color_map = JSON.parse(`{"P1": "#A0522D", "P2": "#B0E0E6", "P3": "#9370DB", "P4": "#4682B4", "P5": "#FFD700"}`);
+    color_map[`Total ${metricType}`] = "#D3D3D3";  // Dynamically set Total Time or Total Pulls
+
 
     const width = 1200;
     const height = 700;
-    const margin = { top: 20, right: 200, bottom: 20, left: 200 };  // Add margins for labels
+    const margin = { top: 20, right: 250, bottom: 20, left: 200 };  // Add margins for labels
 
     const svg = d3.select("#sankey_chart")
         .append("svg")
@@ -38,6 +33,7 @@ const metricType = data.metricType;
     const sankey = d3.sankey()
         .nodeWidth(15)
         .nodePadding(10)
+        .nodeSort(null)  // <--- preserves the array order (or specify your own comparator)
         .extent([[1, 1], [width - 1, height - 1]]);
 
     // Ensure that nodes have indices assigned
@@ -106,12 +102,20 @@ const metricType = data.metricType;
         .attr("stroke-width", d => Math.max(1, d.width))
         .on("click", (event, d) => {
             let tooltipText;
+            
+            // Find the source node's value
+            const sourceNode = sankeyNodes.find(node => node.id === d.source.id);
+            const sourceValue = sourceNode ? sourceNode.value : 1;  // Avoid division by zero
+        
+            // Calculate percentage of the source node
+            const percentage = ((d.value / sourceValue) * 100).toFixed(1);
+            
             if (metricType === "Time") {
                 const hours = Math.floor(d.value / 3600);
                 const minutes = Math.floor((d.value % 3600) / 60);
-                tooltipText = `${d.source.id} → ${d.target.id}: ${hours} hr ${minutes} min`;
+                tooltipText = `${d.source.id} → ${d.target.id} (${percentage}%): ${hours} hr ${minutes} min`;
             } else if (metricType === "Pulls") {
-                tooltipText = `${d.source.id} → ${d.target.id}: ${d.value} pulls`;
+                tooltipText = `${d.source.id} → ${d.target.id} (${percentage}%): ${d.value} pulls`;
             }
 
             tooltip.html(tooltipText)
