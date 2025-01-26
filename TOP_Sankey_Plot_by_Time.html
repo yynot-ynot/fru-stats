@@ -102,12 +102,20 @@
         .attr("stroke-width", d => Math.max(1, d.width))
         .on("click", (event, d) => {
             let tooltipText;
+            
+            // Find the source node's value
+            const sourceNode = sankeyNodes.find(node => node.id === d.source.id);
+            const sourceValue = sourceNode ? sourceNode.value : 1;  // Avoid division by zero
+        
+            // Calculate percentage of the source node
+            const percentage = ((d.value / sourceValue) * 100).toFixed(1);
+            
             if (metricType === "Time") {
                 const hours = Math.floor(d.value / 3600);
                 const minutes = Math.floor((d.value % 3600) / 60);
-                tooltipText = `${d.source.id} → ${d.target.id}: ${hours} hr ${minutes} min`;
+                tooltipText = `${d.source.id} → ${d.target.id} (${percentage}%): ${hours} hr ${minutes} min`;
             } else if (metricType === "Pulls") {
-                tooltipText = `${d.source.id} → ${d.target.id}: ${d.value} pulls`;
+                tooltipText = `${d.source.id} → ${d.target.id} (${percentage}%): ${d.value} pulls`;
             }
 
             tooltip.html(tooltipText)
