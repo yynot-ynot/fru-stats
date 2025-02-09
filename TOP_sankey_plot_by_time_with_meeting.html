@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Sankey Diagram</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+</head>
+<body>
+    <div id="sankey_chart"></div>
+
+<script>
+    const data = {"nodes": [{"id": "Total Time", "value": 673165, "label": "186 hr 59 min"}, {"id": "P1 Progression", "value": 17312, "label": "4 hr 48 min - 2.6%"}, {"id": "P2 Progression", "value": 76546, "label": "21 hr 15 min - 11.4%"}, {"id": "P3 Progression", "value": 103650, "label": "28 hr 47 min - 15.4%"}, {"id": "P4 Progression", "value": 67436, "label": "18 hr 43 min - 10.0%"}, {"id": "P5 Progression", "value": 206277, "label": "57 hr 17 min - 30.6%"}, {"id": "P6 Progression", "value": 201944, "label": "56 hr 05 min - 30.0%"}, {"id": "P1 Total", "value": 82613, "label": "22 hr 56 min - 12.3%"}, {"id": "P2 Total", "value": 70355, "label": "19 hr 32 min - 10.5%"}, {"id": "P3 Total", "value": 87700, "label": "24 hr 21 min - 13.0%"}, {"id": "P4 Total", "value": 27947, "label": "7 hr 45 min - 4.2%"}, {"id": "P5 Total", "value": 121827, "label": "33 hr 50 min - 18.1%"}, {"id": "P6 Total", "value": 43206, "label": "12 hr 00 min - 6.4%"}, {"id": "Meetings, Breaks and DCs", "value": 239517, "label": "66 hr 31 min - 35.6%"}], "links": [{"source": "Total Time", "target": "P1 Progression", "value": 17312}, {"source": "Total Time", "target": "P2 Progression", "value": 76546}, {"source": "Total Time", "target": "P3 Progression", "value": 103650}, {"source": "Total Time", "target": "P4 Progression", "value": 67436}, {"source": "Total Time", "target": "P5 Progression", "value": 206277}, {"source": "Total Time", "target": "P6 Progression", "value": 201944}, {"source": "P1 Progression", "target": "P1 Total", "value": 8842}, {"source": "P1 Progression", "target": "Meetings, Breaks and DCs", "value": 8470}, {"source": "P2 Progression", "target": "P1 Total", "value": 27370}, {"source": "P2 Progression", "target": "P2 Total", "value": 15679}, {"source": "P2 Progression", "target": "Meetings, Breaks and DCs", "value": 33497}, {"source": "P3 Progression", "target": "P1 Total", "value": 15365}, {"source": "P3 Progression", "target": "P2 Total", "value": 21455}, {"source": "P3 Progression", "target": "P3 Total", "value": 23516}, {"source": "P3 Progression", "target": "Meetings, Breaks and DCs", "value": 43314}, {"source": "P4 Progression", "target": "P1 Total", "value": 8546}, {"source": "P4 Progression", "target": "P2 Total", "value": 8731}, {"source": "P4 Progression", "target": "P3 Total", "value": 20520}, {"source": "P4 Progression", "target": "P4 Total", "value": 5624}, {"source": "P4 Progression", "target": "Meetings, Breaks and DCs", "value": 24015}, {"source": "P5 Progression", "target": "P1 Total", "value": 13750}, {"source": "P5 Progression", "target": "P2 Total", "value": 14003}, {"source": "P5 Progression", "target": "P3 Total", "value": 28552}, {"source": "P5 Progression", "target": "P4 Total", "value": 15112}, {"source": "P5 Progression", "target": "P5 Total", "value": 61763}, {"source": "P5 Progression", "target": "Meetings, Breaks and DCs", "value": 73097}, {"source": "P6 Progression", "target": "P1 Total", "value": 8740}, {"source": "P6 Progression", "target": "P2 Total", "value": 10487}, {"source": "P6 Progression", "target": "P3 Total", "value": 15112}, {"source": "P6 Progression", "target": "P4 Total", "value": 7211}, {"source": "P6 Progression", "target": "P5 Total", "value": 60064}, {"source": "P6 Progression", "target": "P6 Total", "value": 43206}, {"source": "P6 Progression", "target": "Meetings, Breaks and DCs", "value": 57124}], "metricType": "Time"};
+    const metricType = data.metricType;
+
+    const color_map = JSON.parse(`{"P1": "#708090", "P2": "#003366", "P3": "#7E6BAE", "P4": "#0078D7", "P5": "#B5A642", "P6": "#FFD700", "Meetings, Breaks and DCs": "#D3D3D3"}`);
+    color_map[`Total ${metricType}`] = "#D3D3D3";  // Dynamically set Total Time or Total Pulls
+
+
+    const width = 1200;
+    const height = 700;
+    const margin = { top: 20, right: 350, bottom: 20, left: 200 };  // Add margins for labels
+
+    const svg = d3.select("#sankey_chart")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)  // Account for margins
+        .attr("height", height + margin.top + margin.bottom)  // Account for margins
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const sankey = d3.sankey()
+        .nodeWidth(15)
+        .nodePadding(10)
+        .nodeSort(null)  // <--- preserves the array order (or specify your own comparator)
+        .linkSort((a, b) => a.source.index - b.source.index)  // Maintain link order
+        .extent([[1, 1], [width - 1, height - 1]]);
+
+    // Ensure that nodes have indices assigned
+    const sankeyNodes = data.nodes.map((node, index) => ({ ...node, index }));
+
+    // Ensure links map source and target to node indices
+    const sankeyLinks = data.links.map(link => ({
+        source: sankeyNodes.findIndex(node => node.id === link.source),
+        target: sankeyNodes.findIndex(node => node.id === link.target),
+        value: link.value
+    }));
+
+    const sankeyData = sankey({
+        nodes: sankeyNodes,
+        links: sankeyLinks
+    });
+
+    console.log("Nodes:", sankeyData.nodes);
+    console.log("Links:", sankeyData.links);
+
+    // Helper function to get color based on node id
+    const getNodeColor = id => {
+        if (id === `Total ${metricType}`) return color_map[`Total ${metricType}`]; 
+        if (id === "Meetings, Breaks and DCs") return color_map["Meetings, Breaks and DCs"]; // Apply light gray
+        const phase = id.split(" ")[0]; // Extract "P1", "P2", etc., from id
+        return color_map[phase] || "#808080"; // Default color (gray) if not found
+    };
+
+    // Function to lighten a color by applying an opacity effect
+    const lightenColor = (hex, opacity) => {
+        const [r, g, b] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
+        return `rgba(${r},${g},${b},${opacity})`;
+    };
+
+    // Render nodes
+    svg.append("g")
+        .selectAll("rect")
+        .data(sankeyData.nodes)
+        .join("rect")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("fill", d => getNodeColor(d.id)) // Apply color map
+
+    // Create a div for the tooltip and hide it initially
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("background", "#fff")
+        .style("border", "1px solid #ccc")
+        .style("padding", "8px")
+        .style("border-radius", "4px")
+        .style("box-shadow", "0 0 10px rgba(0,0,0,0.2)")
+        .style("pointer-events", "none")
+        .style("display", "none");
+
+    // Render links and attach click event for tooltips
+    svg.append("g")
+        .selectAll("path")
+        .data(sankeyData.links)
+        .join("path")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("fill", "none")
+        .attr("stroke", d => lightenColor(getNodeColor(d.target.id), 0.5)) // Lighter/transparent color
+        .attr("stroke-width", d => Math.max(1, d.width))
+        .on("click", (event, d) => {
+            let tooltipText;
+
+            // Find the source node's value
+            const sourceNode = sankeyNodes.find(node => node.id === d.source.id);
+            const sourceValue = sourceNode ? sourceNode.value : 1;  // Avoid division by zero
+
+            // Calculate percentage of the source node
+            const percentage = ((d.value / sourceValue) * 100).toFixed(1);
+
+            if (metricType === "Time") {
+                const hours = Math.floor(d.value / 3600);
+                const minutes = Math.floor((d.value % 3600) / 60);
+                tooltipText = `${d.source.id} → ${d.target.id} (${percentage}%): ${hours} hr ${minutes} min`;
+            } else if (metricType === "Pulls") {
+                tooltipText = `${d.source.id} → ${d.target.id} (${percentage}%): ${d.value} pulls`;
+            }
+
+            tooltip.html(tooltipText)
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY + 10}px`)
+                .style("display", "block");
+        });
+
+    // Hide tooltip when clicking elsewhere on the page
+    d3.select("body").on("click", function(event) {
+        if (!event.target.closest("path")) {
+            tooltip.style("display", "none");
+        }
+    });
+
+    // Add labels to nodes
+    svg.append("g")
+        .selectAll("text")
+        .data(sankeyData.nodes)
+        .join("text")
+        .attr("x", d => {
+            if (d.id.endsWith("Total") || /meeting/i.test(d.id)) {
+                return d.x1 + 6; // Position to the right of the node
+            }
+            return d.x0 - 6; // Position to the left of the node for others
+        })
+        .attr("y", d => (d.y0 + d.y1) / 2) // Center label vertically
+        .attr("dy", "0.35em") // Adjust text alignment
+        .attr("text-anchor", d => (
+            d.id.endsWith("Total") || /meeting/i.test(d.id) ? "start" : "end"
+        )) // Align text appropriately
+        .attr("fill", "black") // Label color
+        .text(d => `${d.id} (${d.label})`); // Add label with time
+</script>
+</body>
+</html>
+    
