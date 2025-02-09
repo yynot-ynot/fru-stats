@@ -1,0 +1,12 @@
+# Ignore virtual environment folder
+venv/
+# Ignore other unnecessary files and folders
+.DS_Store
+.env
+.idea/
+data/
+input/
+output/
+*/__pycache__/
+__pycache__/
+

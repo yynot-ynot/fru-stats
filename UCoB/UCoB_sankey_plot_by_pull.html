@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Sankey Diagram</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+</head>
+<body>
+    <div id="sankey_chart"></div>
+
+<script>
+    const data = {"nodes": [{"id": "Total Pulls", "value": 142, "label": "142 pulls"}, {"id": "P1 Progression", "value": 0, "label": "0 pulls - 0.0%"}, {"id": "P2 Progression", "value": 0, "label": "0 pulls - 0.0%"}, {"id": "P3 Progression", "value": 50, "label": "50 pulls - 35.2%"}, {"id": "P4 Progression", "value": 73, "label": "73 pulls - 51.4%"}, {"id": "P5 Progression", "value": 19, "label": "19 pulls - 13.4%"}, {"id": "P1 Total", "value": 31, "label": "31 pulls - 21.8%"}, {"id": "P2 Total", "value": 21, "label": "21 pulls - 14.8%"}, {"id": "P3 Total", "value": 74, "label": "74 pulls - 52.1%"}, {"id": "P4 Total", "value": 12, "label": "12 pulls - 8.5%"}, {"id": "P5 Total", "value": 4, "label": "4 pulls - 2.8%"}], "links": [{"source": "Total Pulls", "target": "P1 Progression", "value": 0}, {"source": "Total Pulls", "target": "P2 Progression", "value": 0}, {"source": "Total Pulls", "target": "P3 Progression", "value": 50}, {"source": "Total Pulls", "target": "P4 Progression", "value": 73}, {"source": "Total Pulls", "target": "P5 Progression", "value": 19}, {"source": "P1 Progression", "target": "P1 Total", "value": 0}, {"source": "P2 Progression", "target": "P1 Total", "value": 0}, {"source": "P2 Progression", "target": "P2 Total", "value": 0}, {"source": "P3 Progression", "target": "P1 Total", "value": 15}, {"source": "P3 Progression", "target": "P2 Total", "value": 14}, {"source": "P3 Progression", "target": "P3 Total", "value": 21}, {"source": "P4 Progression", "target": "P1 Total", "value": 13}, {"source": "P4 Progression", "target": "P2 Total", "value": 5}, {"source": "P4 Progression", "target": "P3 Total", "value": 48}, {"source": "P4 Progression", "target": "P4 Total", "value": 7}, {"source": "P5 Progression", "target": "P1 Total", "value": 3}, {"source": "P5 Progression", "target": "P2 Total", "value": 2}, {"source": "P5 Progression", "target": "P3 Total", "value": 5}, {"source": "P5 Progression", "target": "P4 Total", "value": 5}, {"source": "P5 Progression", "target": "P5 Total", "value": 4}], "metricType": "Pulls"};
+    const metricType = data.metricType;
+
+    const color_map = JSON.parse(`{"P1": "#006400", "P2": "#D46A6A", "P3": "#005F8D", "P4": "#B5651D", "P5": "#FFD700", "Meetings, Breaks and DCs": "#D3D3D3"}`);
+    color_map[`Total ${metricType}`] = "#D3D3D3";  // Dynamically set Total Time or Total Pulls
+
+
+    const width = 1200;
+    const height = 700;
+    const margin = { top: 20, right: 350, bottom: 20, left: 200 };  // Add margins for labels
+
+    const svg = d3.select("#sankey_chart")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)  // Account for margins
+        .attr("height", height + margin.top + margin.bottom)  // Account for margins
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const sankey = d3.sankey()
+        .nodeWidth(15)
+        .nodePadding(10)
+        .nodeSort(null)  // <--- preserves the array order (or specify your own comparator)
+        .linkSort((a, b) => a.source.index - b.source.index)  // Maintain link order
+        .extent([[1, 1], [width - 1, height - 1]]);
+
+    // Ensure that nodes have indices assigned
+    const sankeyNodes = data.nodes.map((node, index) => ({ ...node, index }));
+
+    // Ensure links map source and target to node indices
+    const sankeyLinks = data.links.map(link => ({
+        source: sankeyNodes.findIndex(node => node.id === link.source),
+        target: sankeyNodes.findIndex(node => node.id === link.target),
+        value: link.value
+    }));
+
+    const sankeyData = sankey({
+        nodes: sankeyNodes,
+        links: sankeyLinks
+    });
+
+    console.log("Nodes:", sankeyData.nodes);
+    console.log("Links:", sankeyData.links);
+
+    // Helper function to get color based on node id
+    const getNodeColor = id => {
+        if (id === `Total ${metricType}`) return color_map[`Total ${metricType}`]; 
+        if (id === "Meetings, Breaks and DCs") return color_map["Meetings, Breaks and DCs"]; // Apply light gray
+        const phase = id.split(" ")[0]; // Extract "P1", "P2", etc., from id
+        return color_map[phase] || "#808080"; // Default color (gray) if not found
+    };
+
+    // Function to lighten a color by applying an opacity effect
+    const lightenColor = (hex, opacity) => {
+        const [r, g, b] = hex.match(/\w\w/g).map(x => parseInt(x, 16));
+        return `rgba(${r},${g},${b},${opacity})`;
+    };
+
+    // Render nodes
+    svg.append("g")
+        .selectAll("rect")
+        .data(sankeyData.nodes)
+        .join("rect")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("fill", d => getNodeColor(d.id)) // Apply color map
+
+    // Create a div for the tooltip and hide it initially
+    const tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("position", "absolute")
+        .style("background", "#fff")
+        .style("border", "1px solid #ccc")
+        .style("padding", "8px")
+        .style("border-radius", "4px")
+        .style("box-shadow", "0 0 10px rgba(0,0,0,0.2)")
+        .style("pointer-events", "none")
+        .style("display", "none");
+
+    // Render links and attach click event for tooltips
+    svg.append("g")
+        .selectAll("path")
+        .data(sankeyData.links)
+        .join("path")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("fill", "none")
+        .attr("stroke", d => lightenColor(getNodeColor(d.target.id), 0.5)) // Lighter/transparent color
+        .attr("stroke-width", d => Math.max(1, d.width))
+        .on("click", (event, d) => {
+            let tooltipText;
+
+            // Find the source node's value
+            const sourceNode = sankeyNodes.find(node => node.id === d.source.id);
+            const sourceValue = sourceNode ? sourceNode.value : 1;  // Avoid division by zero
+
+            // Calculate percentage of the source node
+            const percentage = ((d.value / sourceValue) * 100).toFixed(1);
+
+            if (metricType === "Time") {
+                const hours = Math.floor(d.value / 3600);
+                const minutes = Math.floor((d.value % 3600) / 60);
+                tooltipText = `${d.source.id} → ${d.target.id} (${percentage}%): ${hours} hr ${minutes} min`;
+            } else if (metricType === "Pulls") {
+                tooltipText = `${d.source.id} → ${d.target.id} (${percentage}%): ${d.value} pulls`;
+            }
+
+            tooltip.html(tooltipText)
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY + 10}px`)
+                .style("display", "block");
+        });
+
+    // Hide tooltip when clicking elsewhere on the page
+    d3.select("body").on("click", function(event) {
+        if (!event.target.closest("path")) {
+            tooltip.style("display", "none");
+        }
+    });
+
+    // Add labels to nodes
+    svg.append("g")
+        .selectAll("text")
+        .data(sankeyData.nodes)
+        .join("text")
+        .attr("x", d => {
+            if (d.id.endsWith("Total") || /meeting/i.test(d.id)) {
+                return d.x1 + 6; // Position to the right of the node
+            }
+            return d.x0 - 6; // Position to the left of the node for others
+        })
+        .attr("y", d => (d.y0 + d.y1) / 2) // Center label vertically
+        .attr("dy", "0.35em") // Adjust text alignment
+        .attr("text-anchor", d => (
+            d.id.endsWith("Total") || /meeting/i.test(d.id) ? "start" : "end"
+        )) // Align text appropriately
+        .attr("fill", "black") // Label color
+        .text(d => `${d.id} (${d.label})`); // Add label with time
+</script>
+</body>
+</html>
+    
